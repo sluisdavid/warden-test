@@ -1,0 +1,44 @@
+services:
+  warden:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: warden
+    environment:
+      WARDEN_DATABASE_URL: ${WARDEN_DATABASE_URL:-/data/warden.db}
+      WARDEN_HISTORY_LIMIT: ${WARDEN_HISTORY_LIMIT:-5}
+      WARDEN_LLM_PROVIDER: ${WARDEN_LLM_PROVIDER:-heuristic}
+      WARDEN_LLM_API_URL: ${WARDEN_LLM_API_URL:-https://api.groq.com/openai/v1/chat/completions}
+      WARDEN_LLM_API_KEY: ${WARDEN_LLM_API_KEY:-}
+      WARDEN_LLM_MODEL: ${WARDEN_LLM_MODEL:-llama-3.1-8b-instant}
+      WARDEN_ORCHESTRATOR_BASE_URL: ${WARDEN_ORCHESTRATOR_BASE_URL:-http://orchestrator-mock:8001}
+      WARDEN_NOTIFIER_BASE_URL: ${WARDEN_NOTIFIER_BASE_URL:-http://notifier-mock:8002}
+      WARDEN_LOG_LEVEL: ${WARDEN_LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    volumes:
+      - warden-data:/data
+    depends_on:
+      - orchestrator-mock
+      - notifier-mock
+
+  orchestrator-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orchestrator-mock
+    command: ["uvicorn", "mocks.orchestrator_mock:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "8001:8001"
+
+  notifier-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notifier-mock
+    command: ["uvicorn", "mocks.notifier_mock:app", "--host", "0.0.0.0", "--port", "8002"]
+    ports:
+      - "8002:8002"
+
+volumes:
+  warden-data:
